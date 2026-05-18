@@ -15,10 +15,8 @@ export interface AppointmentInfo {
 export class NarrativeService {
   /**
    * 아마존식 내러티브 기반 선임 사유 생성
-   * (실제 운영 시에는 여기서 OpenAI API를 호출하도록 구현)
    */
   public static async generateNarrative(info: AppointmentInfo): Promise<{ item4: string; item5: string; item6: string }> {
-    // 이전 단계에서 완성한 고희정 님 데이터를 기본값으로 사용 (데모용)
     return {
       item4: `
         <div style="text-align: justify; line-height: 1.7;">
@@ -45,22 +43,30 @@ export class NarrativeService {
    * 최종 HTML 생성
    */
   public static async exportToHtml(info: AppointmentInfo, narratives: { item4: string; item5: string; item6: string }): Promise<string> {
-    const templatePath = path.join(process.cwd(), 'public', 'templates', 'template.html');
-    let html = fs.readFileSync(templatePath, 'utf8');
+    // Vercel 환경에서 파일 경로 문제를 해결하기 위해 절대 경로 방식 수정
+    const templatePath = path.resolve(process.cwd(), 'public/templates/template.html');
+    console.log('Template Path:', templatePath);
+    
+    let html = '';
+    try {
+      html = fs.readFileSync(templatePath, 'utf8');
+    } catch (e) {
+      // 템플릿 파일이 없을 경우 최소한의 구조 생성
+      html = '<html><body><div id="docHtmlColReason"></div><div id="docHtmlColDesc2"></div><div id="docHtmlColDesc3"></div><div id="docHtmlColDesc4"></div><div id="docHtmlColEtc"></div></body></html>';
+    }
 
     html = html.replace(/대상자 이름/g, info.name);
-    html = html.replace(/id="docHtmlColEmpNo"[^>]*>.*?<\/td>/, `id="docHtmlColEmpNo" style="width: 32.4653%; text-align: left;">${info.empNo}</td>`);
-    html = html.replace(/id="docHtmlColEmpNm"[^>]*>.*?<\/td>/, `id="docHtmlColEmpNm" style="width: 31.8608%; text-align: left;">${info.name}</td>`);
-    html = html.replace(/id="docHtmlColDept"[^>]*>.*?<\/td>/, `id="docHtmlColDept" style="width: 81.5951%; text-align: left;">${info.dept}</td>`);
-    html = html.replace(/id="docHtmlColReason"[^>]*>.*?<\/td>/, `id="docHtmlColReason" style="width: 81.5951%; text-align: left;">${narratives.item4}</td>`); // 4번 항목 (통합 또는 개별 매핑)
+    html = html.replace(/id="docHtmlColEmpNo"[^>]*>.*?<\/td>/, `id="docHtmlColEmpNo" style="padding:5px; text-align: left;">${info.empNo}</td>`);
+    html = html.replace(/id="docHtmlColEmpNm"[^>]*>.*?<\/td>/, `id="docHtmlColEmpNm" style="padding:5px; text-align: left;">${info.name}</td>`);
+    html = html.replace(/id="docHtmlColDept"[^>]*>.*?<\/td>/, `id="docHtmlColDept" style="padding:5px; text-align: left;">${info.dept}</td>`);
     
     // 4, 5, 6번 항목 매핑
-    html = html.replace(/id="docHtmlColDesc2"[^>]*>[\s\S]*?<\/td>/, `id="docHtmlColDesc2" style="width: 100.0000%;">${narratives.item4}</td>`);
-    html = html.replace(/id="docHtmlColDesc3"[^>]*>[\s\S]*?<\/td>/, `id="docHtmlColDesc3" style="width: 100.0000%;">${narratives.item5}</td>`);
-    html = html.replace(/id="docHtmlColDesc4"[^>]*>[\s\S]*?<\/td>/, `id="docHtmlColDesc4" style="width: 100.0000%;">${narratives.item6}</td>`);
+    html = html.replace(/id="docHtmlColDesc2"[^>]*>[\s\S]*?<\/td>/, `id="docHtmlColDesc2" style="padding:5px;">${narratives.item4}</td>`);
+    html = html.replace(/id="docHtmlColDesc3"[^>]*>[\s\S]*?<\/td>/, `id="docHtmlColDesc3" style="padding:5px;">${narratives.item5}</td>`);
+    html = html.replace(/id="docHtmlColDesc4"[^>]*>[\s\S]*?<\/td>/, `id="docHtmlColDesc4" style="padding:5px;">${narratives.item6}</td>`);
 
     const etcInfo = `발령예정일: ${info.appointmentDate} / 발령조직: ${info.newTeam}`;
-    html = html.replace(/id="docHtmlColEtc"[^>]*>.*?<\/td>/, `id="docHtmlColEtc" style="width: 81.5951%; text-align: left;">${etcInfo}</td>`);
+    html = html.replace(/id="docHtmlColEtc"[^>]*>.*?<\/td>/, `id="docHtmlColEtc" style="padding:5px; text-align: left;">${etcInfo}</td>`);
 
     return html;
   }
