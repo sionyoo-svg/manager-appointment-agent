@@ -1,5 +1,5 @@
 
-import { NarrativeService, AppointmentInfo } from '@/services/NarrativeService';
+import { NarrativeService, AppointmentInfo } from '@/services/narrativeService';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
